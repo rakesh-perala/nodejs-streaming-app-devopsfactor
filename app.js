@@ -1,49 +1,49 @@
 const express = require('express');
 const path = require('path');
+const expressLayouts = require('express-ejs-layouts');
+
 const app = express();
+const PORT = 3000;
+
+// Load movies data
 const movies = require('./data/movies.json');
 
+// View Engine
 app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+
+// Layout setup
+app.use(expressLayouts);
+app.set('layout', 'layout'); // uses views/layout.ejs
+
+// Middleware
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
+
+// Home page
 app.get('/', (req, res) => {
-    const search = req.query.search;
-    let filteredMovies = movies;
-    if (search) {
-        filteredMovies = movies.filter(m => m.title.toLowerCase().includes(search.toLowerCase()));
-    }
-    res.render('index', { movies: filteredMovies, search });
+  res.render('index', { movies });
 });
 
+// Movie details
 app.get('/movie/:id', (req, res) => {
-    const movie = movies.find(m => m.id == req.params.id);
-    if (movie) {
-        res.render('movie', { movie });
-    } else {
-        res.send('Movie not found!');
-    }
+  const movie = movies.find(m => m.id == req.params.id);
+  res.render('movie', { movie });
 });
 
+// Login page
 app.get('/login', (req, res) => {
-    res.render('login');
+  res.render('login');
 });
 
-app.post('/login', (req, res) => {
-    const { email, password } = req.body;
-    if (email && password) res.redirect('/');
-    else res.send('Login failed!');
-});
-
+// Signup page
 app.get('/signup', (req, res) => {
-    res.render('signup');
+  res.render('signup');
 });
 
-app.post('/signup', (req, res) => {
-    const { email, password } = req.body;
-    if (email && password) res.redirect('/login');
-    else res.send('Signup failed!');
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
 });
-
-app.listen(3000, () => console.log('Server running on http://localhost:3000'));
