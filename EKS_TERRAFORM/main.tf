@@ -1,6 +1,3 @@
-provider "aws" {
-  region = "ap-south-2"
-}
 
 # Get default VPC
 data "aws_vpc" "default" {
