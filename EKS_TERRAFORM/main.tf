@@ -13,7 +13,7 @@ data "aws_vpc" "default" {
 }
 
 # -----------------------------
-# Private Subnets
+# Private Subnets (3 AZs)
 # -----------------------------
 resource "aws_subnet" "private_subnet_1" {
   vpc_id            = data.aws_vpc.default.id
@@ -55,7 +55,7 @@ resource "aws_subnet" "private_subnet_3" {
 }
 
 # -----------------------------
-# IAM Role for EKS Cluster Admin
+# IAM Role for EKS Admin
 # -----------------------------
 resource "aws_iam_role" "eks_admin_role" {
   name = "EKS-Admin-Role"
@@ -72,7 +72,7 @@ resource "aws_iam_role" "eks_admin_role" {
   })
 }
 
-# Attach AdministratorAccess Policy
+# Attach AdministratorAccess policy
 resource "aws_iam_role_policy_attachment" "eks_admin_attach" {
   role       = aws_iam_role.eks_admin_role.name
   policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
@@ -92,7 +92,6 @@ resource "aws_eks_cluster" "eks_cluster" {
       aws_subnet.private_subnet_2.id,
       aws_subnet.private_subnet_3.id
     ]
-
     endpoint_private_access = true
     endpoint_public_access  = true
   }
@@ -111,6 +110,7 @@ resource "aws_eks_fargate_profile" "fargate_profile" {
   cluster_name           = aws_eks_cluster.eks_cluster.name
   fargate_profile_name   = "devops-fargate-profile"
   pod_execution_role_arn = aws_iam_role.eks_admin_role.arn
+
   subnet_ids = [
     aws_subnet.private_subnet_1.id,
     aws_subnet.private_subnet_2.id,
