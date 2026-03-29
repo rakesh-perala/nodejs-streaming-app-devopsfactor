@@ -1,68 +1,29 @@
 
-############################################################
-# Get default VPC
-############################################################
+# -----------------------------
+# VPC & Subnets
+# -----------------------------
 data "aws_vpc" "default" {
   default = true
 }
 
-############################################################
-# Private Subnets (3 AZs)
-############################################################
-resource "aws_subnet" "private_subnet_1" {
-  vpc_id            = data.aws_vpc.default.id
-  cidr_block        = "172.31.100.0/24"
-  availability_zone = "ap-south-2a"
-  map_public_ip_on_launch = false
-
-  tags = {
-    Name    = "private-subnet-1"
-    Owner   = "DevOpsFactory"
-    Project = "DevOps-EKS"
+data "aws_subnets" "default" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default.id]
   }
 }
 
-resource "aws_subnet" "private_subnet_2" {
-  vpc_id            = data.aws_vpc.default.id
-  cidr_block        = "172.31.101.0/24"
-  availability_zone = "ap-south-2b"
-  map_public_ip_on_launch = false
-
-  tags = {
-    Name    = "private-subnet-2"
-    Owner   = "DevOpsFactory"
-    Project = "DevOps-EKS"
-  }
-}
-
-resource "aws_subnet" "private_subnet_3" {
-  vpc_id            = data.aws_vpc.default.id
-  cidr_block        = "172.31.102.0/24"
-  availability_zone = "ap-south-2c"
-  map_public_ip_on_launch = false
-
-  tags = {
-    Name    = "private-subnet-3"
-    Owner   = "DevOpsFactory"
-    Project = "DevOps-EKS"
-  }
-}
-
-############################################################
-# IAM Roles for EKS
-############################################################
-
+# -----------------------------
+# IAM Roles
+# -----------------------------
 resource "aws_iam_role" "eks_cluster_role" {
   name = "eks-cluster-role"
-
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Effect = "Allow"
-      Principal = {
-        Service = "eks.amazonaws.com"
-      }
-      Action = "sts:AssumeRole"
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
+      Principal = { Service = "eks.amazonaws.com" }
     }]
   })
 }
@@ -74,17 +35,18 @@ resource "aws_iam_role_policy_attachment" "eks_cluster_policy" {
 
 resource "aws_iam_role" "fargate_pod_execution_role" {
   name = "eks-fargate-pod-execution-role"
-
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Effect = "Allow"
-      Principal = {
-        Service = "eks-fargate-pods.amazonaws.com"
-      }
-      Action = "sts:AssumeRole"
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
+      Principal = { Service = "eks-fargate-pods.amazonaws.com" }
     }]
   })
+  tags = {
+    Owner   = "DevOpsFactory"
+    Project = "DevOps-EKS"
+  }
 }
 
 resource "aws_iam_role_policy_attachment" "fargate_policy" {
@@ -92,62 +54,120 @@ resource "aws_iam_role_policy_attachment" "fargate_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSFargatePodExecutionRolePolicy"
 }
 
-data "aws_caller_identity" "current" {}
-
-resource "aws_iam_role" "eks_admin_role" {
-  name = "eks-admin-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect = "Allow"
-      Principal = {
-        AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
-      }
-      Action = "sts:AssumeRole"
-    }]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "eks_admin_attach" {
-  role       = aws_iam_role.eks_admin_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
-}
-
-############################################################
+# -----------------------------
 # EKS Cluster
-############################################################
+# -----------------------------
 resource "aws_eks_cluster" "eks_cluster" {
   name     = "devops-eks-cluster"
-  version  = "1.32"  # ✨ Supported Kubernetes version
+  version  = "1.25"
   role_arn = aws_iam_role.eks_cluster_role.arn
 
   vpc_config {
-    subnet_ids = [
-      aws_subnet.private_subnet_1.id,
-      aws_subnet.private_subnet_2.id,
-      aws_subnet.private_subnet_3.id
+    subnet_ids              = [
+      data.aws_subnets.default.ids[0],
+      data.aws_subnets.default.ids[1],
+      data.aws_subnets.default.ids[2]
     ]
+    endpoint_public_access  = true
+    endpoint_private_access = false
   }
 
   enabled_cluster_log_types = ["api", "audit", "authenticator"]
+
+  tags = {
+    Owner   = "DevOpsFactory"
+    Project = "DevOps-EKS"
+  }
+
+  depends_on = [aws_iam_role_policy_attachment.eks_cluster_policy]
 }
 
-############################################################
+# -----------------------------
 # Fargate Profile
-############################################################
+# -----------------------------
 resource "aws_eks_fargate_profile" "fargate_profile" {
   cluster_name           = aws_eks_cluster.eks_cluster.name
   fargate_profile_name   = "devops-fargate-profile"
   pod_execution_role_arn = aws_iam_role.fargate_pod_execution_role.arn
-
-  subnet_ids = [
-    aws_subnet.private_subnet_1.id,
-    aws_subnet.private_subnet_2.id,
-    aws_subnet.private_subnet_3.id
+  subnet_ids             = [
+    data.aws_subnets.default.ids[0],
+    data.aws_subnets.default.ids[1],
+    data.aws_subnets.default.ids[2]
   ]
 
   selector {
     namespace = "default"
   }
+
+  tags = {
+    Owner   = "DevOpsFactory"
+    Project = "DevOps-EKS"
+  }
+
+  depends_on = [aws_iam_role_policy_attachment.fargate_policy]
+}
+
+# -----------------------------
+# Node.js Deployment + LoadBalancer
+# -----------------------------
+resource "kubernetes_deployment" "nodejs_app" {
+  metadata {
+    name      = "nodejs-app"
+    namespace = "default"
+    labels = { app = "nodejs-app" }
+  }
+
+  spec {
+    replicas = 1
+    selector {
+      match_labels = { app = "nodejs-app" }
+    }
+    template {
+      metadata {
+        labels = { app = "nodejs-app" }
+      }
+      spec {
+        container {
+          name  = "nodejs"
+          image = "<YOUR_NODEJS_DOCKER_IMAGE>" # replace with your image
+          port { container_port = 3000 }
+        }
+      }
+    }
+  }
+}
+
+resource "kubernetes_service" "nodejs_lb" {
+  metadata {
+    name      = "nodejs-service"
+    namespace = "default"
+  }
+
+  spec {
+    selector = { app = "nodejs-app" }
+    type     = "LoadBalancer"
+    port {
+      port        = 80
+      target_port = 3000
+    }
+  }
+}
+
+# -----------------------------
+# Outputs
+# -----------------------------
+output "cluster_name" {
+  value = aws_eks_cluster.eks_cluster.name
+}
+
+output "cluster_endpoint" {
+  value = aws_eks_cluster.eks_cluster.endpoint
+}
+
+output "fargate_role_arn" {
+  value = aws_iam_role.fargate_pod_execution_role.arn
+}
+
+output "nodejs_service_lb" {
+  value = kubernetes_service.nodejs_lb.status[0].load_balancer[0].ingress[0].hostname
 }
