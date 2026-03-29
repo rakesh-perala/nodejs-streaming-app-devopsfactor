@@ -1,113 +1,142 @@
+# -----------------------------
+# Provider
+# -----------------------------
+provider "aws" {
+  region = "ap-south-1"  # change if needed
+}
 
-#################################################
-# Get default VPC
-#################################################
+# -----------------------------
+# Get Default VPC
+# -----------------------------
 data "aws_vpc" "default" {
   default = true
 }
 
-#################################################
-# Private Subnets
-#################################################
-resource "aws_subnet" "private_subnet_1" {
-  vpc_id            = data.aws_vpc.default.id
-  cidr_block        = "172.31.100.0/24"
-  availability_zone = "ap-south-2a"
-  map_public_ip_on_launch = false
+data "aws_subnets" "default" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default.id]
+  }
+}
 
+# -----------------------------
+# Private Subnets (update tags)
+# -----------------------------
+resource "aws_subnet" "private_subnet_1" {
+  id = "subnet-0fa21ef1f0a8c9922" # your private subnet
   tags = {
     Name    = "private-subnet-1"
-    Tier    = "private"
     Owner   = "DevOpsFactory"
     Project = "DevOps-EKS"
+    Tier    = "private"
   }
 }
 
 resource "aws_subnet" "private_subnet_2" {
-  vpc_id            = data.aws_vpc.default.id
-  cidr_block        = "172.31.101.0/24"
-  availability_zone = "ap-south-2b"
-  map_public_ip_on_launch = false
-
+  id = "subnet-08e05736e563c3434" # your private subnet
   tags = {
     Name    = "private-subnet-2"
+    Owner   = "DevOpsFactory"
+    Project = "DevOps-EKS"
     Tier    = "private"
-    Owner   = "DevOpsFactory"
-    Project = "DevOps-EKS"
   }
 }
 
-#################################################
-# IAM Roles
-#################################################
+# -----------------------------
+# EKS Cluster (match existing version!)
+# -----------------------------
+resource "aws_eks_cluster" "eks_cluster" {
+  name     = "devops-eks-cluster"
+  role_arn = "arn:aws:iam::679968874516:role/eks-cluster-role" # your cluster IAM role
 
-# EKS Cluster Role
-data "aws_iam_policy_document" "eks_cluster_assume_role" {
-  statement {
-    actions = ["sts:AssumeRole"]
-    principals {
-      type        = "Service"
-      identifiers = ["eks.amazonaws.com"]
-    }
+  version = "1.32" # match existing to avoid downgrade
+
+  vpc_config {
+    subnet_ids = [
+      aws_subnet.private_subnet_1.id,
+      aws_subnet.private_subnet_2.id
+    ]
+    endpoint_private_access = true
+    endpoint_public_access  = true
   }
-}
 
-resource "aws_iam_role" "eks_cluster_role" {
-  name               = "eks-cluster-role"
-  assume_role_policy = data.aws_iam_policy_document.eks_cluster_assume_role.json
   tags = {
     Owner   = "DevOpsFactory"
     Project = "DevOps-EKS"
   }
 }
 
-resource "aws_iam_role_policy_attachment" "eks_cluster_policy" {
-  role       = aws_iam_role.eks_cluster_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
-}
+# -----------------------------
+# IAM Role for Fargate Pod Execution
+# -----------------------------
+resource "aws_iam_role" "eks_fargate_pod_execution_role" {
+  name = "eks-fargate-pod-execution-role"
 
-# EKS Fargate Pod Execution Role
-data "aws_iam_policy_document" "fargate_assume_role" {
-  statement {
-    actions = ["sts:AssumeRole"]
-    principals {
-      type        = "Service"
-      identifiers = ["eks-fargate-pods.amazonaws.com"]
-    }
-  }
-}
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
+      Principal = {
+        Service = "eks-fargate-pods.amazonaws.com"
+      }
+    }]
+  })
 
-resource "aws_iam_role" "fargate_pod_execution_role" {
-  name               = "eks-fargate-pod-execution-role"
-  assume_role_policy = data.aws_iam_policy_document.fargate_assume_role.json
   tags = {
     Owner   = "DevOpsFactory"
     Project = "DevOps-EKS"
   }
 }
 
-resource "aws_iam_role_policy_attachment" "fargate_policy" {
-  role       = aws_iam_role.fargate_pod_execution_role.name
+resource "aws_iam_role_policy_attachment" "eks_fargate_attach" {
+  role       = aws_iam_role.eks_fargate_pod_execution_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSFargatePodExecutionRolePolicy"
 }
 
-# Admin Role for root user
-data "aws_iam_policy_document" "eks_admin_assume_role" {
-  statement {
-    actions = ["sts:AssumeRole"]
-    principals {
-      type        = "AWS"
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-    }
+# -----------------------------
+# Fargate Profile
+# -----------------------------
+resource "aws_eks_fargate_profile" "fargate_profile" {
+  cluster_name           = aws_eks_cluster.eks_cluster.name
+  fargate_profile_name   = "devops-fargate-profile"
+  pod_execution_role_arn = aws_iam_role.eks_fargate_pod_execution_role.arn
+  subnet_ids             = [
+    aws_subnet.private_subnet_1.id,
+    aws_subnet.private_subnet_2.id
+  ]
+
+  selector {
+    namespace = "default"
+  }
+
+  tags = {
+    Owner   = "DevOpsFactory"
+    Project = "DevOps-EKS"
   }
 }
 
-data "aws_caller_identity" "current" {}
-
+# -----------------------------
+# Admin IAM Role
+# -----------------------------
 resource "aws_iam_role" "eks_admin_role" {
-  name               = "EKS-Admin-Role"
-  assume_role_policy = data.aws_iam_policy_document.eks_admin_assume_role.json
+  name = "EKS-Admin-Role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = "sts:AssumeRole"
+        Principal = {
+          AWS = "arn:aws:iam::679968874516:root"
+        }
+      }
+    ]
+  })
+
   max_session_duration = 3600
+
   tags = {
     Owner   = "DevOpsFactory"
     Project = "DevOps-EKS"
@@ -117,52 +146,4 @@ resource "aws_iam_role" "eks_admin_role" {
 resource "aws_iam_role_policy_attachment" "eks_admin_attach" {
   role       = aws_iam_role.eks_admin_role.name
   policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
-}
-
-#################################################
-# EKS Cluster
-#################################################
-resource "aws_eks_cluster" "eks_cluster" {
-  name     = "devops-eks-cluster"
-  role_arn = aws_iam_role.eks_cluster_role.arn
-  version  = "1.27"
-
-  vpc_config {
-    subnet_ids = [
-      aws_subnet.private_subnet_1.id,
-      aws_subnet.private_subnet_2.id
-    ]
-    endpoint_private_access = true
-    endpoint_public_access  = false
-  }
-
-  depends_on = [
-    aws_iam_role_policy_attachment.eks_cluster_policy
-  ]
-
-  tags = {
-    Owner   = "DevOpsFactory"
-    Project = "DevOps-EKS"
-  }
-}
-
-#################################################
-# EKS Fargate Profile
-#################################################
-resource "aws_eks_fargate_profile" "fargate_profile" {
-  cluster_name           = aws_eks_cluster.eks_cluster.name
-  fargate_profile_name   = "devops-fargate-profile"
-  pod_execution_role_arn = aws_iam_role.fargate_pod_execution_role.arn
-  subnet_ids = [
-    aws_subnet.private_subnet_1.id,
-    aws_subnet.private_subnet_2.id
-  ]
-
-  selector {
-    namespace = "default"
-  }
-
-  depends_on = [
-    aws_eks_cluster.eks_cluster
-  ]
 }
