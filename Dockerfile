@@ -1,20 +1,17 @@
-# Use official Node.js LTS image
-FROM node:18
+# Use lightweight image
+FROM node:20-alpine
 
-# Set working directory
-WORKDIR /usr/src/app
+WORKDIR /app
 
-# Copy package.json and package-lock.json
+# Copy only package files first (for caching)
 COPY package*.json ./
 
-# Install dependencies (including express-ejs-layouts)
-RUN npm install
+# Install dependencies
+RUN npm ci --only=production
 
-# Copy the rest of the app code
+# Copy rest of the code
 COPY . .
 
-# Expose the port your app uses
 EXPOSE 3000
 
-# Command to run the app
 CMD ["node", "app.js"]
