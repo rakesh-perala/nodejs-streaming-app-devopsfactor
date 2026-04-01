@@ -1,7 +1,7 @@
 {
   "name": "devopsfactor-streaming-app",
   "version": "1.0.0",
-  "description": "Node.js Streaming App branded DevOpsFactor",
+  "description": "Node.js Streaming App (DevOps CI/CD Project)",
   "main": "app.js",
   "scripts": {
     "start": "node app.js"
@@ -9,8 +9,10 @@
   "author": "DevOpsFactor",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.18.2",
+    "dotenv": "^16.4.5",
     "ejs": "^3.1.9",
-    "express-ejs-layouts": "^2.5.1"
+    "express": "^4.18.2",
+    "express-ejs-layouts": "^2.5.1",
+    "morgan": "^1.10.0"
   }
 }
