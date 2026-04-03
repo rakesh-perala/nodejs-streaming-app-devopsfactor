@@ -43,7 +43,7 @@ resource "aws_iam_role_policy_attachment" "eks_cluster_policy" {
 # Create EKS Cluster
 # -----------------------------
 resource "aws_eks_cluster" "eks_cluster" {
-  name     = "devops-eks-cluster"
+  name     = "devops-eks-cluster-v2"
   role_arn = aws_iam_role.eks_cluster_role.arn
   version  = "1.29"
 
