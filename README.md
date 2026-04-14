@@ -1,194 +1,237 @@
-# 🚀 DevOpsFactor Streaming App
+# 🚀 Node.js Streaming App – DevOps Project
 
-![Node.js](https://img.shields.io/badge/Node.js-18-green)
-![Docker](https://img.shields.io/badge/Docker-Containerized-blue)
-![AWS](https://img.shields.io/badge/AWS-Cloud-orange)
-![Kubernetes](https://img.shields.io/badge/Kubernetes-EKS-blueviolet)
-![CI/CD](https://img.shields.io/badge/CI/CD-Jenkins-red)
-![Security](https://img.shields.io/badge/Security-Trivy%20%7C%20OWASP-yellow)
+A complete **DevOps end-to-end project** using Node.js, Docker, Kubernetes (Minikube / AWS EKS), and CI/CD pipeline with Jenkins.
 
 ---
 
-## 🎬 Project Preview (GIF)
+# 📌 Project Overview
 
-> 🔥 Add your app demo GIF here (record using screen recorder & upload to repo)
+This project demonstrates how to:
 
-![App Demo](./public/images/demo.gif)
-
----
-
-## 📌 About Project
-
-A **Netflix-style streaming web application** built using **Node.js, Express, and EJS**, integrated with a **complete DevOps & DevSecOps pipeline**.
-
-This project demonstrates **real-world production workflow**:
-
-👉 Code → Build → Scan → Deploy → Secure 🚀
+* Build a Node.js application
+* Containerize using Docker
+* Deploy on Kubernetes (Minikube / EKS)
+* Automate CI/CD using Jenkins
+* Expose application using Kubernetes Service
+* Deploy using Docker Hub images
+* Connect custom domain for production access
 
 ---
 
-## 🏗️ Architecture Diagram
+# 🌐 Live Project / Domain
 
-```text
-                👨‍💻 Developer
-                      │
-                      ▼
-                  GitHub Repo
-                      │
-                      ▼
-               ⚙️ Jenkins Pipeline
-                      │
-        ┌─────────────┼─────────────┐
-        ▼                             ▼
- 🔍 SonarQube                  🔐 Trivy Scan
- (Code Quality)           (Container Security)
-        │                             │
-        └─────────────┬─────────────┘
-                      ▼
-               🐳 Docker Build
-                      │
-                      ▼
-               📦 Docker Image
-                      │
-                      ▼
-            ☸️ AWS EKS (Fargate)
-                      │
-                      ▼
-                🌐 End Users
+🚀 Production Domain (Branding):
+
+👉 [https://devopsfactory.in](https://devopsfactory.in)
+
+This domain is used to showcase the deployed DevOps project and improve branding for portfolio and YouTube demonstrations.
+
+---
+
+# 🏗️ Architecture
+
+```
+GitHub → Jenkins → Docker Image → Docker Hub → Kubernetes → Service → Domain → Browser
+```
+
+For AWS version:
+
+```
+GitHub → Jenkins → Docker Hub → AWS EKS → Load Balancer → Route53 Domain → Browser
 ```
 
 ---
 
-## 🛠️ Tech Stack
+# 🛠️ Tech Stack
 
-| Category         | Tools                      |
-| ---------------- | -------------------------- |
-| Backend          | Node.js, Express.js        |
-| Frontend         | EJS, CSS                   |
-| Containerization | Docker                     |
-| Cloud            | AWS EC2, AWS EKS (Fargate) |
-| CI/CD            | Jenkins                    |
-| Code Quality     | SonarQube                  |
-| Security         | Trivy, OWASP ZAP           |
+* Node.js
+* Docker
+* Kubernetes (Minikube / AWS EKS)
+* Jenkins (CI/CD)
+* Docker Hub
+* AWS (EKS, LoadBalancer, Route53)
+* Domain (devopsfactory.in)
 
 ---
 
-## 📂 Project Structure
+# 📂 Project Structure
 
-```bash
-├── app.js
+```
+nodejs-streaming-app-devopsfactor/
+│
+├── k8s/
+│   ├── deployment.yaml
+│   ├── service.yaml
+│
+├── Dockerfile
+├── Jenkinsfile
 ├── package.json
-├── data/
-│   └── movies.json
-├── public/
-│   ├── css/
-│   └── images/
-├── views/
-│   ├── layout.ejs
-│   ├── index.ejs
-│   ├── movie.ejs
-│   ├── login.ejs
-│   └── signup.ejs
+├── app.js
+└── README.md
 ```
 
 ---
 
-## 🚀 Run Locally
+# 🚀 Features
 
-```bash
-git clone https://github.com/rakesh-perala/nodejs-streaming-app-devopsfactor.git
-cd nodejs-streaming-app-devopsfactor
-npm install
-node app.js
-```
-
-👉 Open:
-
-```
-http://localhost:3000
-```
+✔ Node.js application
+✔ Docker containerization
+✔ Kubernetes deployment
+✔ Load balancing with Service
+✔ CI/CD pipeline ready
+✔ Cloud deployment support (AWS EKS)
+✔ Custom domain integration (devopsfactory.in)
 
 ---
 
-## 🐳 Docker Setup
+# 🐳 Docker Setup
 
-### Build Image
+## Build Image
 
-```bash
-docker build -t devopsfactor-app .
+```
+docker build -t dockerperala/nodejs-app:latest .
 ```
 
-### Run Container
+## Run Container
 
-```bash
-docker run -d -p 3000:3000 --name devops-app devopsfactor-app
+```
+docker run -p 3000:3000 dockerperala/nodejs-app:latest
 ```
 
 ---
 
-## ☁️ AWS EC2 Deployment
+# ☸️ Kubernetes Deployment (Minikube / EKS)
 
-* Launch EC2 instance
-* Install Docker
-* Clone repo
-* Build & run container
-
-👉 Access:
+## Apply Deployment
 
 ```
-http://<EC2-PUBLIC-IP>:3000
+kubectl apply -f k8s/deployment.yaml
+```
+
+## Apply Service
+
+```
+kubectl apply -f k8s/service.yaml
+```
+
+## Check Pods
+
+```
+kubectl get pods
+```
+
+## Check Service
+
+```
+kubectl get svc
 ```
 
 ---
 
-## ☸️ Kubernetes Deployment (EKS Fargate)
+# 🌐 Access Application
 
-```bash
-kubectl apply -f deployment.yaml
-kubectl apply -f service.yaml
+### Minikube
+
+```
+minikube service nodejs-app-service
+```
+
+### AWS EKS
+
+```
+http://<LoadBalancer-DNS>
+```
+
+### Custom Domain (Production)
+
+```
+https://devopsfactory.in
 ```
 
 ---
 
-## 🔐 DevSecOps Pipeline
+# ⚙️ Jenkins CI/CD Pipeline
 
-✔ Jenkins – CI/CD automation
-✔ SonarQube – Code quality analysis
-✔ Trivy – Vulnerability scanning
-✔ OWASP ZAP – Security testing
+Pipeline stages:
 
----
-
-## 🎯 Features
-
-* 🎬 Movie streaming UI
-* 📄 Movie details page
-* 📱 Responsive design
-* 🧩 Clean architecture
-* ☁️ Cloud-ready
+1. Git Checkout
+2. Install Dependencies
+3. Build Application
+4. Docker Build
+5. Push to Docker Hub
+6. Deploy to Kubernetes
 
 ---
 
-## 🚀 Future Enhancements
+# 📦 Kubernetes YAML Overview
 
-* 🔐 JWT Authentication
-* 📤 Upload videos
-* ⚙️ GitHub Actions CI/CD
-* 🌐 Custom domain + HTTPS
-* 📊 Monitoring (CloudWatch / Prometheus)
+## Deployment
+
+* Runs Node.js app
+* Manages replicas
+* Pulls Docker image
+
+## Service
+
+* Exposes application
+* NodePort / LoadBalancer
+* Handles traffic routing
 
 ---
 
-## 👨‍💻 Author
+# ☁️ AWS Deployment (Optional)
 
-**Rakesh (DevOpsFactor)** 🚀
+For production:
+
+* Use AWS EKS cluster
+* Use LoadBalancer service type
+* Map domain using Route53 / GoDaddy
+* Point domain to Load Balancer or ingress controller
 
 ---
 
-## ⭐ Support
+# 🔥 CI/CD Flow
 
-If you like this project:
+```
+Code Push → Jenkins → Docker Build → Push to Docker Hub → Kubernetes Deploy → Live App → Domain
+```
 
-⭐ Star the repo
-📢 Share with others
-🚀 Keep building DevOps projects
+---
+
+# 📊 Commands Cheat Sheet
+
+```
+kubectl get pods
+kubectl get svc
+kubectl apply -f .
+kubectl delete -f .
+kubectl logs <pod>
+kubectl describe pod <pod>
+```
+
+---
+
+# 💡 Key Learning
+
+* Docker containerization
+* Kubernetes orchestration
+* CI/CD automation
+* Cloud deployment (AWS)
+* Domain mapping & production exposure
+* DevOps workflow understanding
+
+---
+
+# 🎯 Author
+
+Rakesh Perala
+DevOps Engineer 
+
+---
+
+# 🚀 Status
+
+✔ Project Completed (DevOps Learning Phase)
+✔ Ready for YouTube Demo
+✔ Ready for AWS Deployment Upgrade
+✔ Branding Enabled via devopsfactory.in
