@@ -20,11 +20,11 @@ This project demonstrates how to:
 
 # 🌐 Live Project / Domain
 
-🚀 Production Domain :
+🚀 Production Domain (Branding):
 
 👉 [https://devopsfactory.in](https://devopsfactory.in)
 
-
+This domain is used to showcase the deployed DevOps project and improve branding for portfolio and YouTube demonstrations.
 
 ---
 
@@ -224,12 +224,16 @@ kubectl describe pod <pod>
 
 # 🎯 Author
 
-Rakesh Perala
-DevOps Engineer 
-
----
+👤 Rakesh Perala
+🧑‍💻 DevOps Engineer
+📧 [rakesh@devopsfactory.in](mailto:rakesh@devopsfactory.in)
 
 # 🚀 Status
 
 ✔ Project Completed (DevOps Learners)
 ✔ LIVE: devopsfactory.in
+
+✔ Project Completed (DevOps Learning Phase)
+✔ Ready for YouTube Demo
+✔ Ready for AWS Deployment Upgrade
+✔ Branding Enabled via devopsfactory.in
