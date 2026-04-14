@@ -20,11 +20,11 @@ This project demonstrates how to:
 
 # 🌐 Live Project / Domain
 
-🚀 Production Domain (Branding):
+🚀 Production Domain :
 
 👉 [https://devopsfactory.in](https://devopsfactory.in)
 
-This domain is used to showcase the deployed DevOps project and improve branding for portfolio and YouTube demonstrations.
+
 
 ---
 
